@@ -1,0 +1,24 @@
+{
+  "name": "bamazon_SQLapp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "bamazonCustomer.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jricarte/bamazon_SQLapp.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jricarte/bamazon_SQLapp/issues"
+  },
+  "homepage": "https://github.com/jricarte/bamazon_SQLapp#readme",
+  "dependencies": {
+    "inquirer": "^7.0.0",
+    "mysql": "^2.17.1"
+  }
+}
