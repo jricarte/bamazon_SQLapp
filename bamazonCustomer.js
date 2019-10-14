@@ -1,51 +1,115 @@
 var mysql = require("mysql");
-var inquirer = require('inquirer');
+var inquirer = require("inquirer");
 
 var connection = mysql.createConnection({
   host: "localhost",
+  port: 3306,
   user: "root",
   password: "rootroot",
   database: "bamazon_DB"
 });
 
 connection.connect(function(err) {
-    if (err) throw err;
-    console.log("im working")
-    readProducts();
+  if (err) throw err;
+  start();
 });
 
-function readProducts() {
-    console.log("Selecting all products...\n");
-    connection.query("SELECT * FROM products", function(err, res) {
-      if (err) throw err;
-      // Log all results of the SELECT statement
-      console.log(res);
-      connection.end();
-    });
-};
-
 function start() {
-
-    inquirer
-      .prompt({
-        name: "buyProduct",
-        type: "list",
-        message: "Select a Product you would like to buy?",
-        choices: ["1-Toilet Paper", "2-Toothbrush", "3-Paper Towel","4-Non-stick Skillet", "5-Nintendo Switch", "6-Trident Gum", "7-Orange Juice", "8-Basketball", "9-Queen-size Mattress", "10-Macbook Air"]
-      },
-      {
-        name:"productQuantity",
-        type:"number",
-        message: "How much of that item would you like to buy? [ENTER QUANTITY]",
-        validate: function(value) {
-            if (isNaN(value) === false) {
-              return true;
-            }
-            return false;
-        }
-    })
-      .then(function(answer) {
-          console.log("i did it");
-      });
+  connection.query(
+    "select item_id,product_name, price, stock_quantity from products where stock_quantity>0",
+    function(err, res) {
+      if (err) throw err;
+      console.log("Id \t Name \t Price \t Quantity\n");
+      for (var i = 0; i < res.length; i++) {
+        console.log(
+          res[i].item_id +
+            "\t" +
+            res[i].product_name +
+            "\t" +
+            res[i].price +
+            "\t" +
+            res[i].stock_quantity +
+            "\n"
+        );
+      }
+      askQuestions(res.length);
+    }
+  );
 }
-start();
+
+function askQuestions(length) {
+  inquirer
+    .prompt([
+      {
+        type: "input",
+        name: "purcase_item_id",
+        message:
+          "Enter the Item Id of the product you would like to buy??? [Press C to Exit]"
+      }
+    ])
+    .then(function(answer) {
+      var purchaseItemId = answer.purcase_item_id;
+      if (purchaseItemId.toUpperCase() === "C") {
+        process.exit();
+      }
+      inquirer
+        .prompt([
+          {
+            type: "input",
+            name: "quantity",
+            message: "how many units of the product would you like to buy???"
+          }
+        ])
+        .then(function(answer) {
+          if (
+            purchaseItemId > length + 1 ||
+            isNaN(purchaseItemId) ||
+            isNaN(answer.quantity)
+          ) {
+            console.log("invalid Input");
+            if (purchaseItemId > length + 1 || isNaN(purchaseItemId)) {
+              console.log("The item id is not valid");
+            }
+            if (isNaN(answer.quantity)) {
+              console.log("Invalid quantity");
+            }
+            // connection.end();
+            start();
+          } else {
+            connection.query(
+              "select stock_quantity, price from products where item_id = ?",
+              [purchaseItemId],
+              function(err, res) {
+                if (err) throw err;
+                if (answer.quantity > res[0].stock_quantity) {
+                  console.log("Insufficient quantity!");
+                } else {
+                  var updateQuantity =
+                    res[0].stock_quantity - parseFloat(answer.quantity);
+                  connection.query(
+                    "update products set ? where ?",
+                    [
+                      {
+                        stock_quantity: updateQuantity
+                      },
+                      {
+                        item_id: purchaseItemId
+                      }
+                    ],
+                    function(err, res) {
+                      if (err) throw err;
+                    }
+                  );
+                  var totalCost = res[0].price * answer.quantity;
+                  console.log(
+                    "The total price of the purchase : " + totalCost.toFixed(2)
+                  );
+                }
+                // connection.end();
+                start();
+              }
+            );
+          }
+        });
+    });
+}
